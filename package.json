@@ -1,0 +1,16 @@
+{
+  "name": "kiss-test",
+  "type": "module",
+  "version": "0.0.1",
+  "author": "Casey Foster <c@sey.me>",
+  "description": "Keep It Simple, Stupid - Test",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/coderiety/kiss-test"
+  },
+  "dependencies": {
+    "chalk": "3",
+    "glob": "7"
+  }
+}
