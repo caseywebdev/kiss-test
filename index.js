@@ -39,7 +39,10 @@ const flatten = ({ node, prefix }) => {
         nodes,
         flatten({
           node: next,
-          prefix: `${prefix} ${Array.isArray(node) ? `[${name}]` : name}`
+          prefix:
+            name === 'default'
+              ? prefix
+              : `${prefix} ${Array.isArray(node) ? `[${name}]` : name}`
         })
       ),
     {}
@@ -53,7 +56,7 @@ export default async ({ patterns }) => {
   for (const path of paths) {
     const prefix = gray(path);
     try {
-      const node = (await import(nodePath.resolve(path))).default;
+      const node = await import(nodePath.resolve(path));
       Object.assign(tests, flatten({ node, prefix }));
     } catch (er) {
       tests[prefix] = er;
