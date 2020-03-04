@@ -1,7 +1,8 @@
-import _glob from 'glob';
-import chalk from 'chalk';
 import nodePath from 'path';
 import util from 'util';
+
+import chalk from 'chalk';
+import _glob from 'glob';
 
 const glob = util.promisify(_glob);
 
@@ -28,7 +29,9 @@ const createDeferred = () => {
 };
 
 const flatten = ({ node, prefix }) => {
-  if (typeof node === 'function') return { [prefix]: node };
+  if (typeof node === 'function' || node instanceof Error) {
+    return { [prefix]: node };
+  }
 
   return Object.entries(node || {}).reduce(
     (nodes, [name, next]) =>
@@ -48,13 +51,13 @@ export default async ({ patterns }) => {
   const tests = {};
   const paths = await getPaths({ patterns });
   for (const path of paths) {
-    Object.assign(
-      tests,
-      flatten({
-        node: (await import(nodePath.resolve(path))).default,
-        prefix: gray(path)
-      })
-    );
+    const prefix = gray(path);
+    try {
+      const node = (await import(nodePath.resolve(path))).default;
+      Object.assign(tests, flatten({ node, prefix }));
+    } catch (er) {
+      tests[prefix] = er;
+    }
   }
 
   const only = new Set();
@@ -72,6 +75,8 @@ export default async ({ patterns }) => {
       console.log(name);
       const start = now();
       try {
+        if (fn instanceof Error) throw fn;
+
         if (fn.length) {
           const deferred = createDeferred();
           const cb = er => (er ? deferred.reject(er) : deferred.resolve());
