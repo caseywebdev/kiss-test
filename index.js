@@ -102,7 +102,7 @@ export default async ({ patterns }) => {
     }
   }
 
-  const duration = (now() - start).toFixed(1);
+  const duration = (now() - start).toFixed(3);
 
   if (failed.length) {
     console.log(red('Failures'));
