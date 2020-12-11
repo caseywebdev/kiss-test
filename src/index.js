@@ -55,7 +55,7 @@ const handleSignal = signal => {
 };
 
 export default async ({ patterns }) => {
-  process.on('SIGINT', handleSignal).on('SIGITERM', handleSignal);
+  process.on('SIGINT', handleSignal).on('SIGTERM', handleSignal);
 
   const start = now();
   const tests = {};
