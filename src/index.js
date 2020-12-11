@@ -49,7 +49,14 @@ const flatten = ({ node, prefix }) => {
   );
 };
 
+const handleSignal = signal => {
+  console.log(red(`Received ${signal}, exiting immediately...`));
+  process.exit(1);
+};
+
 export default async ({ patterns }) => {
+  process.on('SIGINT', handleSignal).on('SIGITERM', handleSignal);
+
   const start = now();
   const tests = {};
   const paths = await getPaths({ patterns });
