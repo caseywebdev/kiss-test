@@ -9,7 +9,8 @@ export default {
   promise: async () => await 1,
   arrayTest: [
     noop,
-    { 'with a name': noop },
+    noop,
+    { 'with a name #skip': noop },
     [{ nested: noop }, { array: noop }]
   ],
   'intentional failure': () => {

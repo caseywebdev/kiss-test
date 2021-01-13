@@ -1,12 +1,9 @@
 import nodePath from 'path';
 import util from 'util';
 
-import chalk from 'chalk';
 import _glob from 'glob';
 
 const glob = util.promisify(_glob);
-
-const { blue, gray, green, red, yellow } = new chalk.Instance({ level: 1 });
 
 const now = () => {
   const [s, ns] = process.hrtime();
@@ -28,61 +25,55 @@ const createDeferred = () => {
   return deferred;
 };
 
-const flatten = ({ node, prefix }) => {
-  if (typeof node === 'function' || node instanceof Error) {
-    return { [prefix]: node };
-  }
+const flatten = ({ node, prefix = '' }) =>
+  typeof node === 'function'
+    ? { [prefix]: node }
+    : Object.entries(node ?? {}).reduce(
+        (nodes, [name, next]) =>
+          Object.assign(
+            nodes,
+            flatten({
+              node: next,
+              prefix:
+                name === 'default'
+                  ? ''
+                  : `${prefix && `${prefix} `}${
+                      Array.isArray(node) ? `[${name}]` : name
+                    }`
+            })
+          ),
+        {}
+      );
 
-  return Object.entries(node || {}).reduce(
-    (nodes, [name, next]) =>
-      Object.assign(
-        nodes,
-        flatten({
-          node: next,
-          prefix:
-            name === 'default'
-              ? prefix
-              : `${prefix} ${Array.isArray(node) ? `[${name}]` : name}`
-        })
-      ),
-    {}
-  );
-};
-
-const handleSignal = signal => {
-  console.log(red(`Received ${signal}, exiting immediately...`));
-  process.exit(1);
-};
-
-export default async ({ patterns }) => {
-  process.on('SIGINT', handleSignal).on('SIGTERM', handleSignal);
-
+export default async ({ patterns, onTestStart, onTestEnd }) => {
   const start = now();
-  const tests = {};
   const paths = await getPaths({ patterns });
+  const tests = new Map();
   for (const path of paths) {
-    const prefix = gray(path);
     try {
       const node = await import(nodePath.resolve(path));
-      Object.assign(tests, flatten({ node, prefix }));
+      for (const [name, fn] of Object.entries(flatten({ node }))) {
+        tests.set({ name, path }, fn);
+      }
     } catch (er) {
-      tests[prefix] = er;
+      tests.set({ name: '', path }, er);
     }
   }
 
   const only = new Set();
   const skip = new Set();
-  for (const [name, fn] of Object.entries(tests)) {
-    if (name.includes('#only')) only.add(fn);
-    if (name.includes('#skip')) skip.add(fn);
+  for (const key of tests.keys()) {
+    if (key.name.includes('#only')) only.add(key);
+    if (key.name.includes('#skip')) skip.add(key);
   }
 
-  let passed = 0;
+  const passed = [];
   const failed = [];
-  let skipped = 0;
-  for (const [name, fn] of Object.entries(tests)) {
-    if (!skip.has(fn) && (!only.size || only.has(fn))) {
-      console.log(name);
+  const skipped = [];
+  for (const [key, fn] of tests.entries()) {
+    const result = { ...key };
+    if (!skip.has(key) && (!only.size || only.has(key))) {
+      if (onTestStart) await onTestStart(result);
       const start = now();
       try {
         if (fn instanceof Error) throw fn;
@@ -95,39 +86,19 @@ export default async ({ patterns }) => {
         } else {
           await fn();
         }
-        const duration = (now() - start).toFixed(3);
-        console.log(green('Passed') + gray(' | ') + yellow(`${duration}s\n`));
-        ++passed;
       } catch (er) {
-        const duration = (now() - start).toFixed(3);
-        console.log(er);
-        console.log(red(`Failed`) + gray(' | ') + yellow(`${duration}s\n`));
-        failed.push({ name, error: er });
+        result.error = er;
       }
+
+      result.duration = (now() - start).toFixed(3);
+      if (result.error) failed.push(result);
+      else passed.push(result);
+
+      if (onTestEnd) await onTestEnd(result);
     } else {
-      ++skipped;
+      skipped.push(result);
     }
   }
 
-  const duration = (now() - start).toFixed(3);
-
-  if (failed.length) {
-    console.log(red('Failures'));
-    for (const { name, error } of failed) {
-      console.log(name);
-      console.log(error);
-      console.log('');
-    }
-  }
-
-  console.log(
-    [
-      green(`${passed} passed`),
-      blue(`${skipped} skipped`),
-      red(`${failed.length} failed`),
-      yellow(`${duration}s`)
-    ].join(gray(' | '))
-  );
-
-  process.exit(failed.length ? 1 : 0);
+  return { duration: (now() - start).toFixed(3), failed, passed, skipped };
 };
