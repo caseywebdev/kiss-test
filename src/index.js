@@ -10,12 +10,9 @@ const now = () => {
   return s + ns / 1e9;
 };
 
-const getPaths = async ({ patterns }) =>
-  [
-    ...new Set(
-      (await Promise.all(patterns.map(pattern => glob(pattern)))).flat()
-    )
-  ].sort();
+const getPaths = async ({ patterns }) => [
+  ...new Set((await Promise.all(patterns.map(pattern => glob(pattern)))).flat())
+];
 
 const createDeferred = () => {
   const deferred = {};
@@ -60,9 +57,11 @@ export default async ({ patterns, onTestStart, onTestEnd }) => {
     }
   }
 
+  const always = new Set();
   const only = new Set();
   const skip = new Set();
   for (const key of tests.keys()) {
+    if (key.name.includes('#always')) always.add(key);
     if (key.name.includes('#only')) only.add(key);
     if (key.name.includes('#skip')) skip.add(key);
   }
@@ -72,7 +71,7 @@ export default async ({ patterns, onTestStart, onTestEnd }) => {
   const skipped = [];
   for (const [key, fn] of tests.entries()) {
     const result = { ...key };
-    if (!skip.has(key) && (!only.size || only.has(key))) {
+    if (!skip.has(key) && (!only.size || only.has(key) || always.has(key))) {
       if (onTestStart) await onTestStart(result);
       const start = now();
       try {
