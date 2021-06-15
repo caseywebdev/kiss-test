@@ -42,7 +42,7 @@ const flatten = ({ node, prefix = '' }) =>
         {}
       );
 
-export default async ({ patterns, onTestStart, onTestEnd }) => {
+export default async ({ bail, patterns, onTestStart, onTestEnd }) => {
   const start = now();
   const paths = await getPaths({ patterns });
   const tests = new Map();
@@ -71,7 +71,11 @@ export default async ({ patterns, onTestStart, onTestEnd }) => {
   const skipped = [];
   for (const [key, fn] of tests.entries()) {
     const result = { ...key };
-    if (!skip.has(key) && (!only.size || only.has(key) || always.has(key))) {
+    if (
+      !skip.has(key) &&
+      (!only.size || only.has(key) || always.has(key)) &&
+      (!bail || !failed.length)
+    ) {
       if (onTestStart) await onTestStart(result);
       const start = now();
       try {

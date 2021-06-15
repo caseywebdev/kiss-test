@@ -13,8 +13,15 @@ const handleSignal = signal => {
 
 process.on('SIGINT', handleSignal).on('SIGTERM', handleSignal);
 
+const possibleFlags = new Set(['--bail']);
+const enabledFlags = new Set();
+const patterns = process.argv.slice(2);
+while (possibleFlags.has(patterns[0])) enabledFlags.add(patterns.shift());
+
 kissTest({
-  patterns: process.argv.slice(2),
+  bail: enabledFlags.has('--bail'),
+
+  patterns,
 
   onTestStart: ({ path, name }) => {
     console.log(`${gray(path)} ${name}`);
