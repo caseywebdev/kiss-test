@@ -14,7 +14,7 @@
     "url": "https://github.com/coderiety/kiss-test"
   },
   "dependencies": {
-    "chalk": "3",
+    "chalk": "4",
     "glob": "7"
   },
   "scripts": {
