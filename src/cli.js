@@ -4,7 +4,7 @@ import chalk from 'chalk';
 
 import kissTest from './index.js';
 
-const { blue, gray, green, red, yellow } = new chalk.Instance({ level: 1 });
+const { blue, gray, green, red, yellow } = chalk;
 
 const handleSignal = signal => {
   console.log(red(`Received ${signal}, exiting immediately...`));
