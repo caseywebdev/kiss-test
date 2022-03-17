@@ -73,42 +73,44 @@ export default async ({ bail, patterns, onTestStart, onTestEnd }) => {
   const skipped = [];
   for (const [key, fn] of tests.entries()) {
     const result = { ...key };
-    if (!skip.has(key) && (!only.size || only.has(key) || always.has(key))) {
-      result.index = ++index;
-      toRun.push({ fn, result });
-    } else {
+    if (skip.has(key) || (!always.has(key) && only.size && !only.has(key))) {
       skipped.push(result);
+      continue;
     }
+
+    result.index = ++index;
+    toRun.push({ fn, result });
   }
 
   for (const { fn, result } of toRun) {
-    if (!bail || !failed.length) {
-      result.length = toRun.length;
-      if (onTestStart) await onTestStart(result);
-      const start = now();
-      try {
-        if (fn instanceof Error) throw fn;
-
-        if (fn.length) {
-          const deferred = createDeferred();
-          const cb = er => (er ? deferred.reject(er) : deferred.resolve());
-          await fn(cb);
-          await deferred.promise;
-        } else {
-          await fn();
-        }
-      } catch (er) {
-        result.error = er;
-      }
-
-      result.duration = (now() - start).toFixed(3);
-      if (result.error) failed.push(result);
-      else passed.push(result);
-
-      if (onTestEnd) await onTestEnd(result);
-    } else {
+    if (bail && failed.length) {
       skipped.push(result);
+      continue;
     }
+
+    result.length = toRun.length;
+    if (onTestStart) await onTestStart(result);
+    const start = now();
+    try {
+      if (fn instanceof Error) throw fn;
+
+      if (fn.length) {
+        const deferred = createDeferred();
+        const cb = er => (er ? deferred.reject(er) : deferred.resolve());
+        await fn(cb);
+        await deferred.promise;
+      } else {
+        await fn();
+      }
+    } catch (er) {
+      result.error = er;
+    }
+
+    result.duration = (now() - start).toFixed(3);
+    if (result.error) failed.push(result);
+    else passed.push(result);
+
+    if (onTestEnd) await onTestEnd(result);
   }
 
   return { duration: (now() - start).toFixed(3), failed, passed, skipped };
