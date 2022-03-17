@@ -66,16 +66,24 @@ export default async ({ bail, patterns, onTestStart, onTestEnd }) => {
     if (key.name.includes('#skip')) skip.add(key);
   }
 
+  let index = 0;
+  const toRun = [];
   const passed = [];
   const failed = [];
   const skipped = [];
   for (const [key, fn] of tests.entries()) {
     const result = { ...key };
-    if (
-      !skip.has(key) &&
-      (!only.size || only.has(key) || always.has(key)) &&
-      (!bail || !failed.length)
-    ) {
+    if (!skip.has(key) && (!only.size || only.has(key) || always.has(key))) {
+      result.index = ++index;
+      toRun.push({ fn, result });
+    } else {
+      skipped.push(result);
+    }
+  }
+
+  for (const { fn, result } of toRun) {
+    if (!bail || !failed.length) {
+      result.length = toRun.length;
       if (onTestStart) await onTestStart(result);
       const start = now();
       try {

@@ -4,7 +4,7 @@ import chalk from 'chalk';
 
 import kissTest from './index.js';
 
-const { blue, gray, green, red, yellow } = chalk;
+const { blue, cyan, gray, green, magenta, red, yellow } = chalk;
 
 const handleSignal = signal => {
   console.log(red(`Received ${signal}, exiting immediately...`));
@@ -23,23 +23,25 @@ kissTest({
 
   patterns,
 
-  onTestStart: ({ path, name }) => {
-    console.log(`${gray(path)} ${name}`);
+  onTestStart: ({ index, path, name }) => {
+    console.log(`${cyan(index)} ${magenta(path)} ${name}`);
   },
 
-  onTestEnd: ({ duration, error }) => {
-    if (error) {
-      console.log(error);
-      console.log(red(`Failed`) + gray(' | ') + yellow(`${duration}s\n`));
-    } else {
-      console.log(green('Passed') + gray(' | ') + yellow(`${duration}s\n`));
-    }
+  onTestEnd: ({ duration, error, index, length }) => {
+    if (error) console.log(error);
+    console.log(
+      [
+        error ? red(`Failed`) : green('Passed'),
+        yellow(`${duration}s`),
+        cyan(`${Math.floor((index / length) * 100)}%\n`)
+      ].join(gray(' | '))
+    );
   }
 }).then(({ duration, failed, passed, skipped }) => {
   if (failed.length) {
     console.log(red('Failures'));
-    for (const { path, name, error } of failed) {
-      console.log(`${gray(path)} ${name}`);
+    for (const { index, path, name, error } of failed) {
+      console.log(`${cyan(index)} ${magenta(path)} ${name}`);
       console.log(error);
       console.log('');
     }
