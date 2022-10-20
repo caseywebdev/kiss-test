@@ -21,14 +21,14 @@ const patterns = process.argv.slice(2);
 while (possibleFlags.has(patterns[0])) enabledFlags.add(patterns.shift());
 
 const numberFormat = new Intl.NumberFormat();
-const formatOps = durations => {
+const maybeOps = durations => {
   if (durations.length < 2) return '';
 
   const median = durations.sort()[Math.floor(durations.length / 2)];
   if (!median) return '';
 
   const ops = Math.round(1 / median);
-  return `${numberFormat.format(ops)} op/s `;
+  return yellow(`${numberFormat.format(ops)} op/s`);
 };
 
 kissTest({
@@ -43,11 +43,14 @@ kissTest({
   onTestEnd: ({ duration, durations, error, index, length }) => {
     if (error) console.log(error);
     console.log(
-      [
-        error ? red(`Failed`) : green('Passed'),
-        yellow(`${formatOps(durations)}${duration}s`),
-        cyan(`${Math.floor((index / length) * 100)}%\n`)
-      ].join(gray(' | '))
+      []
+        .concat(
+          error ? red(`Failed`) : green('Passed'),
+          yellow(`${duration}s`),
+          cyan(`${Math.floor((index / length) * 100)}%`),
+          maybeOps(durations) || []
+        )
+        .join(gray(' | ')) + `\n`
     );
   }
 }).then(({ duration, failed, passed, skipped }) => {
