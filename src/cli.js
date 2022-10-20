@@ -4,6 +4,8 @@ import chalk from 'chalk';
 
 import kissTest from './index.js';
 
+const { console, Intl, process, Set } = globalThis;
+
 const { blue, cyan, gray, green, magenta, red, yellow } = chalk;
 
 const handleSignal = signal => {
@@ -18,6 +20,17 @@ const enabledFlags = new Set();
 const patterns = process.argv.slice(2);
 while (possibleFlags.has(patterns[0])) enabledFlags.add(patterns.shift());
 
+const numberFormat = new Intl.NumberFormat();
+const formatOps = durations => {
+  if (durations.length < 2) return '';
+
+  const median = durations.sort()[Math.floor(durations.length / 2)];
+  if (!median) return '';
+
+  const ops = Math.round(1 / median);
+  return `${numberFormat.format(ops)} op/s `;
+};
+
 kissTest({
   bail: enabledFlags.has('--bail'),
 
@@ -27,12 +40,12 @@ kissTest({
     console.log(`${cyan(index)} ${magenta(path)} ${name}`);
   },
 
-  onTestEnd: ({ duration, error, index, length }) => {
+  onTestEnd: ({ duration, durations, error, index, length }) => {
     if (error) console.log(error);
     console.log(
       [
         error ? red(`Failed`) : green('Passed'),
-        yellow(`${duration}s`),
+        yellow(`${formatOps(durations)}${duration}s`),
         cyan(`${Math.floor((index / length) * 100)}%\n`)
       ].join(gray(' | '))
     );

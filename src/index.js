@@ -3,6 +3,8 @@ import util from 'util';
 
 import _glob from 'glob';
 
+const { process, Map, Promise, Set } = globalThis;
+
 const glob = util.promisify(_glob);
 
 const now = () => {
@@ -15,9 +17,24 @@ const getPaths = async ({ patterns }) => [
 ];
 
 const createDeferred = () => {
-  const deferred = {};
+  const deferred = { status: 'pending' };
   deferred.promise = new Promise((resolve, reject) =>
-    Object.assign(deferred, { resolve, reject })
+    Object.assign(deferred, {
+      resolve: value => {
+        if (deferred.status === 'pending') {
+          deferred.status = 'fulfilled';
+          deferred.value = value;
+        }
+        return resolve(value);
+      },
+      reject: value => {
+        if (deferred.status === 'pending') {
+          deferred.status = 'rejected';
+          deferred.value = value;
+        }
+        return reject(value);
+      }
+    })
   );
   return deferred;
 };
@@ -72,7 +89,7 @@ export default async ({ bail, patterns, onTestStart, onTestEnd }) => {
   const failed = [];
   const skipped = [];
   for (const [key, fn] of tests.entries()) {
-    const result = { ...key };
+    const result = { ...key, durations: [] };
     if (skip.has(key) || (!always.has(key) && only.size && !only.has(key))) {
       skipped.push(result);
       continue;
@@ -94,13 +111,17 @@ export default async ({ bail, patterns, onTestStart, onTestEnd }) => {
     try {
       if (fn instanceof Error) throw fn;
 
-      if (fn.length) {
-        const deferred = createDeferred();
-        const cb = er => (er ? deferred.reject(er) : deferred.resolve());
-        await fn(cb);
-        await deferred.promise;
-      } else {
-        await fn();
+      const times = parseInt(result.name.match(/#times=(\d+)/)?.[1]) || 1;
+      for (let i = 0; i < times; ++i) {
+        const deferred = fn.length && createDeferred();
+        const start = now();
+        const maybePromise = deferred
+          ? fn(er => (er ? deferred.reject(er) : deferred.resolve()))
+          : fn();
+        if (typeof maybePromise?.then === 'function') await maybePromise;
+        if (deferred.status === 'rejected') throw deferred.value;
+        else if (deferred.status === 'pending') await deferred.promise;
+        result.durations.push(now() - start);
       }
     } catch (er) {
       result.error = er;
