@@ -1,20 +1,6 @@
-import nodePath from 'path';
-import util from 'util';
+const { performance, Map, Promise, Set } = globalThis;
 
-import _glob from 'glob';
-
-const { process, Map, Promise, Set } = globalThis;
-
-const glob = util.promisify(_glob);
-
-const now = () => {
-  const [s, ns] = process.hrtime();
-  return s + ns / 1e9;
-};
-
-const getPaths = async ({ patterns }) => [
-  ...new Set((await Promise.all(patterns.map(pattern => glob(pattern)))).flat())
-];
+const now = () => performance.now() / 1000;
 
 const createDeferred = () => {
   const deferred = { status: 'pending' };
@@ -39,38 +25,31 @@ const createDeferred = () => {
   return deferred;
 };
 
-const flatten = ({ node, prefix = '' }) =>
+const flatten = (node, prefix = '') =>
   typeof node === 'function'
     ? { [prefix]: node }
     : Object.entries(node ?? {}).reduce(
         (nodes, [name, next]) =>
           Object.assign(
             nodes,
-            flatten({
-              node: next,
-              prefix:
-                name === 'default'
-                  ? ''
-                  : `${prefix && `${prefix} `}${
-                      Array.isArray(node) ? `[${name}]` : name
-                    }`
-            })
+            flatten(
+              next,
+              name === 'default'
+                ? ''
+                : `${prefix && `${prefix} `}${
+                    Array.isArray(node) ? `[${name}]` : name
+                  }`
+            )
           ),
         {}
       );
 
-export default async ({ bail, patterns, onTestStart, onTestEnd }) => {
+export default async ({ bail, tests: _tests, onTestStart, onTestEnd }) => {
   const start = now();
-  const paths = await getPaths({ patterns });
   const tests = new Map();
-  for (const path of paths) {
-    try {
-      const node = await import(nodePath.resolve(path));
-      for (const [name, fn] of Object.entries(flatten({ node }))) {
-        tests.set({ name, path }, fn);
-      }
-    } catch (er) {
-      tests.set({ name: '', path }, er);
+  for (const [path, node] of Object.entries(_tests)) {
+    for (const [name, fn] of Object.entries(flatten(node))) {
+      tests.set({ name, path }, fn);
     }
   }
 
@@ -109,8 +88,6 @@ export default async ({ bail, patterns, onTestStart, onTestEnd }) => {
     if (onTestStart) await onTestStart(result);
     const start = now();
     try {
-      if (fn instanceof Error) throw fn;
-
       const times = parseInt(result.name.match(/#times=(\d+)/)?.[1]) || 1;
       for (let i = 0; i < times; ++i) {
         const deferred = fn.length && createDeferred();

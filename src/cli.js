@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+import fs from 'node:fs/promises';
+import nodePath from 'node:path';
 
 import chalk from 'chalk';
 
@@ -31,10 +33,15 @@ const maybeOps = durations => {
   return yellow(`${numberFormat.format(ops)} op/s`);
 };
 
+const tests = {};
+for (const path of await Array.fromAsync(fs.glob(patterns))) {
+  tests[path] = await import(nodePath.resolve(path));
+}
+
 kissTest({
   bail: enabledFlags.has('--bail'),
 
-  patterns,
+  tests,
 
   onTestStart: ({ index, path, name }) => {
     console.log(`${cyan(index)} ${magenta(path)} ${name}`);

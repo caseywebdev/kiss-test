@@ -2,7 +2,7 @@
   "name": "kiss-test",
   "type": "module",
   "main": "src/index.js",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "author": "Casey Foster <c@sey.me>",
   "description": "Keep It Simple, Stupid - Test",
   "license": "MIT",
@@ -14,8 +14,7 @@
     "url": "https://github.com/coderiety/kiss-test"
   },
   "dependencies": {
-    "chalk": "5",
-    "glob": "7"
+    "chalk": "5"
   },
   "scripts": {
     "test": "src/cli.js src/setup.test.js 'src/**/*.test.js' src/teardown.test.js"
