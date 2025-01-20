@@ -2,7 +2,7 @@
   "name": "kiss-test",
   "type": "module",
   "main": "src/index.js",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "author": "Casey Foster <c@sey.me>",
   "description": "Keep It Simple, Stupid - Test",
   "license": "MIT",

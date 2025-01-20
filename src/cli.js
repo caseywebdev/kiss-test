@@ -27,8 +27,10 @@ const patterns = process.argv.slice(2);
 while (possibleFlags.has(patterns[0])) enabledFlags.add(patterns.shift());
 
 const tests = {};
-for (const path of await Array.fromAsync(fs.glob(patterns))) {
-  tests[path] = await import(nodePath.resolve(path));
+for (const pattern of patterns) {
+  for (const path of (await Array.fromAsync(fs.glob(pattern))).sort()) {
+    tests[path] ??= await import(nodePath.resolve(path));
+  }
 }
 
 const bail = enabledFlags.has('--bail');
