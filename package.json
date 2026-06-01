@@ -2,7 +2,7 @@
   "name": "kiss-test",
   "type": "module",
   "main": "src/index.js",
-  "version": "0.2.10",
+  "version": "0.3.0",
   "author": "Casey Foster <c@sey.me>",
   "description": "Keep It Simple, Stupid - Test",
   "license": "MIT",
@@ -11,12 +11,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/coderiety/kiss-test"
+    "url": "git+https://github.com/coderiety/kiss-test.git"
   },
-  "dependencies": {
-    "chalk": "5"
-  },
-  "scripts": {
-    "test": "src/cli.js src/setup.test.js 'src/**/*.test.js' src/teardown.test.js"
+  "devDependencies": {
+    "eslint": "9",
+    "eslint-config-coderiety": "2"
   }
 }

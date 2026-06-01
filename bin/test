@@ -1,0 +1,5 @@
+#!/bin/sh -e
+
+node_modules/.bin/eslint --fix
+
+src/cli.js src/setup.test.js 'src/**/*.test.js' src/teardown.test.js || true

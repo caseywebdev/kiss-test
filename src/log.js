@@ -1,8 +1,6 @@
-import chalk from 'chalk';
+import { styleText } from 'node:util';
 
 const { console, Intl } = globalThis;
-
-const { blue, cyan, gray, green, magenta, red, yellow } = chalk;
 
 const numberFormat = new Intl.NumberFormat();
 const maybeOps = durations => {
@@ -12,12 +10,14 @@ const maybeOps = durations => {
   if (!median) return '';
 
   const ops = Math.round(1 / median);
-  return yellow(`${numberFormat.format(ops)} op/s`);
+  return styleText('yellow', `${numberFormat.format(ops)} op/s`);
 };
 
 export default {
   onTestStart: ({ index, path, name }) => {
-    console.log(`${cyan(index)} ${magenta(path)} ${name}`);
+    console.log(
+      `${styleText('cyan', `${index}`)} ${styleText('magenta', path)} ${name}`
+    );
   },
 
   onTestEnd: ({ duration, durations, error, index, length }) => {
@@ -25,20 +25,22 @@ export default {
     console.log(
       []
         .concat(
-          error ? red(`Failed`) : green('Passed'),
-          yellow(`${duration}s`),
-          cyan(`${Math.floor((index / length) * 100)}%`),
+          error ? styleText('red', `Failed`) : styleText('green', 'Passed'),
+          styleText('yellow', `${duration}s`),
+          styleText('cyan', `${Math.floor((index / length) * 100)}%`),
           maybeOps(durations) || []
         )
-        .join(gray(' | ')) + `\n`
+        .join(styleText('gray', ' | ')) + `\n`
     );
   },
 
   onComplete: ({ duration, failed, passed, skipped }) => {
     if (failed.length) {
-      console.log(red('Failures'));
+      console.log(styleText('red', 'Failures'));
       for (const { index, path, name, error } of failed) {
-        console.log(`${cyan(index)} ${magenta(path)} ${name}`);
+        console.log(
+          `${styleText('cyan', `${index}`)} ${styleText('magenta', path)} ${name}`
+        );
         console.log(error);
         console.log('');
       }
@@ -46,11 +48,11 @@ export default {
 
     console.log(
       [
-        green(`${passed.length} passed`),
-        blue(`${skipped.length} skipped`),
-        red(`${failed.length} failed`),
-        yellow(`${duration}s`)
-      ].join(gray(' | '))
+        styleText('green', `${passed.length} passed`),
+        styleText('blue', `${skipped.length} skipped`),
+        styleText('red', `${failed.length} failed`),
+        styleText('yellow', `${duration}s`)
+      ].join(styleText('gray', ' | '))
     );
   }
 };
