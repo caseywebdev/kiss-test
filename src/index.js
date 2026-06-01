@@ -44,7 +44,12 @@ const flatten = (node, prefix = '') =>
         {}
       );
 
-export const test = async ({ bail, tests: _tests, onTestStart, onTestEnd }) => {
+export const execute = async ({
+  bail,
+  tests: _tests,
+  onTestStart,
+  onTestEnd
+}) => {
   const start = now();
   const tests = new Map();
   for (const [path, node] of Object.entries(_tests)) {

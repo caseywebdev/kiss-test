@@ -4,9 +4,8 @@ import { glob, readFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { parseArgs, styleText } from 'node:util';
 
-import log from './log.js';
-
-import { test } from './index.js';
+import { execute } from '#src/index.js';
+import log from '#src/log.js';
 
 const { console, process, URL } = globalThis;
 
@@ -86,7 +85,7 @@ for (const pattern of positionals) {
   }
 }
 
-const result = await test({ bail, tests, onTestStart, onTestEnd });
+const result = await execute({ bail, tests, onTestStart, onTestEnd });
 
 onComplete(result);
 
