@@ -85,7 +85,6 @@ for (const pattern of positionals) {
     tests[path] ??= await import(resolve(path));
   }
 }
-console.log(tests);
 
 const result = await test({ bail, tests, onTestStart, onTestEnd });
 
